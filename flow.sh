@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin
+log=/var/log/flow.log
+lock=/var/lock/flow.lock
+
+
+console(){
+        n=$1
+        shift
+        docker exec -it `docker ps|grep $n | awk '{print $1}'` /usr/share/nginx/www/console $@
+}
+run(){
+        n=$1
+        shift
+        docker exec -i `docker ps |grep $n | awk '{print $1}'` $@
+}
+
+archive(){
+        id=$1
+        tmp=`mktemp`
+         run db$id sh /app/action.sh get_idsites > $tmp
+        idsites="`cat $tmp`"
+        nsites="`wc -l $tmp | awk '{print $1}'`"
+        hour=`date +%H:%M`
+        opt="--force-periods=day --force-date-last-n=2"
+        if [ \( "$hour" \< "01:20" \) -o \( "$hour" \> "23:40" \) ];then opt= ;fi
+	nn=`docker ps|grep pw$id | awk '{print $1}'`
+        for idsite in $idsites;do
+		ii=`echo $idsite | sed -e "s/^M//"`
+                echo "docker exec -i $nn /usr/share/nginx/www/console core:archive --force-idsites=$ii $opt"
+        done | parallel -j4
+        rm -f $tmp
+}
+
+
+archive2(){
+	id=$1
+	tmp=`mktemp`
+	 run db$id sh /app/action.sh get_idsites > $tmp
+	idsites="`cat $tmp`"
+	nsites="`wc -l $tmp | awk '{print $1}'`"
+	hour=`date +%H`
+	opt="--force-periods=day --force-date-last-n=2"
+	#if [ \( $hour -le 3 \) -o \( $hour -ge 23 \) ];then opt= ;fi
+        for idsite in $idsites;do
+		echo "Archive site $idsite"
+                console pw$id core:archive --force-idsites=$idsite $opt
+        done
+	rm -f $tmp
+}
+monitor(){
+	id=$1
+	  console pw$id queuedtracking:monitor
+}
+tracker_disable(){
+	id=$1
+ 	 console pw$id config:set --section=QueuedTracking --key=processDuringTrackingRequest --value=0
+}
+config() {
+	s=$1
+        v=$2
+        n=$3
+        console pw$id config:set --section=$s --key=$v --value=$n
+}
+set_log(){
+	v=log_level
+	n=$1
+ 	console pw$id config:set --section=log --key=$v --value=$n
+}
+set_worker(){
+	v=numQueueWorkers
+	n=$1
+ 	 console pw$id config:set --section=QueuedTracking --key=$v --value=$n
+}
+tracker_enable(){
+	id=$1
+ 	 console pw$id config:set --section=QueuedTracking --key=processDuringTrackingRequest --value=1
+}
+reduce(){
+	id=$1
+	shift
+	run db$id sh /app/action.sh reduceHourly $@
+}
+rotate(){
+	id=$1
+	tracker_disable $id
+	 run db$id /app/action.sh rotate
+	tracker_enable $id
+	echo "Extract new data from tmp table"
+	 run db$id /app/action.sh extractAll
+	echo "Delete tmp table"
+	run db$id /app/action.sh dropTmp
+	echo "Archiving...."
+	echo "archive $id"
+	archive $id
+	echo "Done Archive"
+}
+arch(){
+	id=$1
+	shift
+	  console pw$id core:archive --force-periods=day --force-date-last-n=2 $@
+}
+doall(){
+	action=$1
+	shift
+	for id in 1 2;do
+		$action $id $@ 
+	done
+}
+doloop(){
+	time=$1
+	shift
+	while true;do
+		$@ 
+		sleep $time
+	done
+}
+waitLock(){ 
+        while [ -f $lock ];do sleep 10;done
+        $@
+
+}
+
+lock(){
+	if [ -f $lock ];then exit 0;fi
+	touch $lock
+	$@ 
+	rm -f $lock
+	
+}
+reduceAll(){
+ 	doloop 10 waitLock doall reduce
+}
+archiveAll(){
+
+	cur=`date +%Y%m%d%H%M`
+	if [ -z "$old" ];then old=$cur;fi
+	force=$1
+	( while true;do
+		if [ \( -n "$force" \) -o \( "$old" != "$cur" \) ];then
+			if [ -n "$force" ]; then sleep $force;fi
+			echo "old:$old cur:$cur"
+			ns=`date +%s`
+			echo "`date`: start archive"
+			lock doall rotate 
+			ns1=`date +%s`
+			dl=`echo $ns1 - $ns | bc`
+			echo "`date`: $dl seconds"      
+			force=
+			old=$cur
+		fi
+		sleep 10
+		cur1=`date +%Y%m%d%H`
+		H=`date +%M`
+		isH=`echo $H % 10 |bc` 
+		if [ $isH -eq 0 ];then
+			cur=$cur1`echo $H - $isH | bc`
+		fi
+	done ) >> $log
+}
+echo "`date`: start " >> $log
+$@
+echo "`date`: end" >> $log

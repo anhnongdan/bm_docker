@@ -1,0 +1,54 @@
+version: "2"
+services:
+  pw_ID_:
+    privileged: true
+    network_mode: host
+    environment:
+     - PORT=400_ID_
+     - HHVM_PORT=800_ID_
+     - DB_HOST=127.0.0.1
+     - DB_PORT=300_ID_
+     - DB_USER=admin
+     - DB_DATABASE=pw_ID_
+     - DB_PASS=f3d3e61f1c4ddbce127a52c5e18f621194edcd98
+     - REDIS_PORT=600_ID_
+     - APP_LOG=/var/log/app/pw.log
+     - IS_HHVM=
+     - IS_FPM=backup
+
+    build:
+      context: docker-php
+    volumes:
+      - /data/bimax/pw_ID_/www/app:/app:rw
+      - /data/bimax/pw_ID_/www/src:/usr/share/nginx/www:rw
+      - /data/bimax/pw_ID_/www/log:/var/log/app:rw
+
+  db_ID_:
+    environment:
+     - DB_PORT=300_ID_
+     - REDIS_PORT=600_ID_
+     - DB_PASS=f3d3e61f1c4ddbce127a52c5e18f621194edcd98
+     - DB_DATABASES=pw_ID_
+     - DB_DATABASE=pw_ID_
+     - DB_USER=admin
+     - SITE_START=_ID_000
+    privileged: true
+    network_mode: host
+    build:
+     context: mariadb
+    volumes:
+     - /data/bimax/pw_ID_/db/app:/app:rw
+     - /data/bimax/pw_ID_/db/data:/var/lib/mysql:rw
+     - /data/bimax/pw_ID_/www/src:/usr/share/nginx/www:rw
+     - /data/bimax/pw_ID_/db/log:/var/log/mysql:rw
+  redis_ID_:
+    environment:
+     - REDIS_PORT=600_ID_
+    privileged: true
+    network_mode: host
+    build:
+     context: redis
+    volumes:
+     - /data/bimax/pw_ID_/redis/data:/var/lib/redis:rw
+     - /data/bimax/pw_ID_/redis/log:/var/log/redis:rw
+  

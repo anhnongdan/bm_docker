@@ -18,7 +18,7 @@ services:
 
     build:
       context: docker-php
-    image: bimax_pw_ID_
+    image: bimax_pw1
     volumes:
       - /data/bimax/pw_ID_/www/app:/app:rw
       - /data/bimax/pw_ID_/www/src:/usr/share/nginx/www:rw
@@ -37,7 +37,7 @@ services:
     network_mode: host
     build:
      context: mariadb
-    image: bimax_db_ID_
+    image: bimax_db1
     volumes:
      - /data/bimax/pw_ID_/db/app:/app:rw
      - /data/bimax/pw_ID_/db/data:/var/lib/mysql:rw
@@ -50,7 +50,7 @@ services:
     network_mode: host
     build:
      context: redis
-    image: bimax_redis_ID_
+    image: bimax_redis1
     volumes:
      - /data/bimax/pw_ID_/redis/data:/var/lib/redis:rw
      - /data/bimax/pw_ID_/redis/log:/var/log/redis:rw

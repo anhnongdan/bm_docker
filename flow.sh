@@ -4,6 +4,13 @@ log=/var/log/flow.log
 lock=/var/lock/flow.lock
 
 
+r(){
+        n=$1
+        shift
+        docker exec -it `docker ps |grep $n | awk '{print $1}'` $@
+}
+
+
 console(){
         n=$1
         shift

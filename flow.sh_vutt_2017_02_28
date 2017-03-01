@@ -4,13 +4,6 @@ log=/var/log/flow.log
 lock=/var/lock/flow.lock
 
 
-r(){
-        n=$1
-        shift
-        docker exec -it `docker ps |grep $n | awk '{print $1}'` $@
-}
-
-
 console(){
         n=$1
         shift
@@ -29,11 +22,7 @@ archive(){
         idsites="`cat $tmp`"
         nsites="`wc -l $tmp | awk '{print $1}'`"
         hour=`date +%H:%M`
-        #use standard date range to avoid problem of Range period parsing. 
-        #Continue debugging ....
-	archive_day=`date +%Y-%m-%d`
-	date_range=${archive_day},$archive_day
-        opt="--force-periods=day --force-date-range=$date_range"
+        opt="--force-periods=day --force-date-last-n=1"
         if [ \( "$hour" \< "01:20" \) -o \( "$hour" \> "23:40" \) ];then opt= ;fi
 	nn=`docker ps|grep pw$id | awk '{print $1}'`
         for idsite in $idsites;do
@@ -51,11 +40,7 @@ archive2(){
 	idsites="`cat $tmp`"
 	nsites="`wc -l $tmp | awk '{print $1}'`"
 	hour=`date +%H`
-	#use standard date range to avoid problem of Range period parsing. 
-	#Continue debugging ....
-        archive_day=`date +%Y-%m-%d`
-        date_range=${archive_day},$archive_day
-        opt="--force-periods=day --force-date-range=$date_range"
+	opt="--force-periods=day --force-date-last-n=1"
 	#if [ \( $hour -le 3 \) -o \( $hour -ge 23 \) ];then opt= ;fi
         for idsite in $idsites;do
 		echo "Archive site $idsite"

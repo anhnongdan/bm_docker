@@ -94,6 +94,7 @@ tracker_enable(){
 reduce(){
 	id=$1
 	shift
+	run db$id sh /app/action.sh deleteOld
 	run db$id sh /app/action.sh reduceHourly $@
 }
 rotate(){

@@ -7,19 +7,19 @@ lock=/var/lock/flow.lock
 r(){
         n=$1
         shift
-        docker exec -it `docker ps |grep $n | awk '{print $1}'` $@
+        docker exec -it `docker ps |grep $n| head -1 | awk '{print $1}'` $@
 }
 
 
 console(){
         n=$1
         shift
-        docker exec -it `docker ps|grep $n | awk '{print $1}'` /usr/share/nginx/www/console $@
+        docker exec -it `docker ps|grep $n | head -1 | awk '{print $1}'` /usr/share/nginx/www/console $@
 }
 run(){
         n=$1
         shift
-        docker exec -i `docker ps |grep $n | awk '{print $1}'` $@
+        docker exec -i `docker ps |grep $n | head -1 | awk '{print $1}'` $@
 }
 
 archive(){
@@ -35,7 +35,7 @@ archive(){
 	date_range=${archive_day},$archive_day
         opt="--force-periods=day --force-date-range=$date_range"
         if [ \( "$hour" \< "01:20" \) -o \( "$hour" \> "23:40" \) ];then opt= ;fi
-	nn=`docker ps|grep pw$id | awk '{print $1}'`
+	nn=`docker ps|grep pw$id | head -1 | awk '{print $1}'`
         for idsite in $idsites;do
 		ii=`echo $idsite | sed -e "s/^M//"`
                 echo "docker exec -i $nn /usr/share/nginx/www/console core:archive --force-idsites=$ii $opt"
@@ -119,7 +119,7 @@ arch(){
 doall(){
 	action=$1
 	shift
-	for id in 1 2;do
+	for id in 1 2 3 4 5 6 7 8 9 10;do
 		$action $id $@ 
 	done
 }

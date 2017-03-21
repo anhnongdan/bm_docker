@@ -4,6 +4,7 @@ log=/var/log/flow.log
 lock=/var/lock/flow.lock
 
 
+
 r(){
         n=$1
         shift
@@ -12,7 +13,7 @@ r(){
 
 
 console(){
-        n=$1
+        n=_pw$1
         shift
         docker exec -it `docker ps|grep $n | head -1 | awk '{print $1}'` /usr/share/nginx/www/console $@
 }
@@ -94,7 +95,7 @@ tracker_enable(){
 reduce(){
 	id=$1
 	shift
-	run db$id sh /app/action.sh deleteOld
+	run db$id sh /app/action.sh deleteOld 1
 	run db$id sh /app/action.sh reduceHourly $@
 }
 rotate(){
@@ -119,7 +120,8 @@ arch(){
 doall(){
 	action=$1
 	shift
-	for id in 1 2 3 4 5 6 7 8 9 10;do
+	ids="`docker ps | awk '/bimax_pw/ {l=$NF;sub(/^bimax_pw/,"",l);sub(/_.*$/,"",l);print(l)}'`"
+	for id in $ids;do
 		$action $id $@ 
 	done
 }
@@ -138,6 +140,14 @@ waitLock(){
 }
 
 lock(){
+	locklast=`stat /var/run/updateinfo.lock -c "%Y"`
+	now=`date +%s`
+	dlay=`echo $now - $locklast | bc`
+	if [ $dlay -gt 120 ];then
+		rm -f $lock
+	fi
+
+
 	if [ -f $lock ];then exit 0;fi
 	touch $lock
 	$@ 

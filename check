@@ -1,0 +1,7 @@
+#!/bin/sh
+flow=/data/app/bimax/flow.sh
+ids="`docker ps | awk '/bimax_pw/ {l=$NF;sub(/^bimax_pw/,"",l);sub(/_.*$/,"",l);print(l)}'`"
+for id in $ids;do
+	$flow r _db$id /app/action.sh stat
+	
+done

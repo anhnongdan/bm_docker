@@ -4,7 +4,7 @@ ids="`docker ps | awk '/bimax_pw/ {l=$NF;sub(/^bimax_pw/,"",l);sub(/_.*$/,"",l);
 tmp=`mktemp`
 for id in $ids;do
 	echo -n "$id;" >> $tmp
-	$flow r _db$id /app/action.sh stat >> $tmp
+	$flow run _db$id /app/action.sh stat >> $tmp
 #| while read s;do echo "0 bimax_db_$id $s $s" ;done
 	
 done

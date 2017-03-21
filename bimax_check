@@ -1,0 +1,12 @@
+#!/bin/sh
+flow=/data/app/bimax/flow.sh
+ids="`docker ps | awk '/bimax_pw/ {l=$NF;sub(/^bimax_pw/,"",l);sub(/_.*$/,"",l);print(l)}'`"
+tmp=`mktemp`
+for id in $ids;do
+	echo -n "$id;" >> $tmp
+	$flow r _db$id /app/action.sh stat >> $tmp
+#| while read s;do echo "0 bimax_db_$id $s $s" ;done
+	
+done
+cat $tmp | awk -F";" '{print "0 bimax_db_"$1,$2"|"$3,$2,$3}'
+rm -f $tmp
